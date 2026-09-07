@@ -198,6 +198,51 @@ def api_extract(rid):
     return jsonify({"next": url_for("edit", rid=rid)})
 
 
+@app.get("/diagnostic")
+@locked
+def diagnostic():
+    """Montre ce que le serveur reçoit pour un lien, sans appeler Claude.
+
+    Sert à savoir en quelques secondes si l'import automatique a une chance
+    de fonctionner depuis l'IP de Railway pour un lien donné.
+    """
+    url = (request.args.get("url") or "").strip()
+    if not url:
+        return render_template("diagnostic.html", url="", result=None, verdict=None)
+
+    result = extract.fetch_page(url)
+    usable = bool(result.get("description") or result.get("page_text")
+                  or result.get("image_alt"))
+
+    if result.get("status") in (401, 403, 429) or result.get("status") == 0:
+        verdict = {
+            "head": "Meta bloque le serveur",
+            "body": "Ce lien ne pourra pas être lu automatiquement. Fais une capture "
+                    "d'écran de la publication et partage-la : c'est la voie fiable.",
+        }
+    elif usable:
+        verdict = {
+            "head": "Ce lien est lisible automatiquement",
+            "body": "Le texte récupéré suffit à construire une fiche. Tu peux coller "
+                    "le lien directement dans l'écran d'ajout.",
+        }
+    elif result.get("image_url"):
+        verdict = {
+            "head": "Photo seule récupérée",
+            "body": "Aucun texte n'est accessible, mais la photo l'est. Claude tentera "
+                    "de lire la recette dessus. Si elle n'est pas écrite sur l'image, "
+                    "partage plutôt une capture d'écran.",
+        }
+    else:
+        verdict = {
+            "head": "Rien à lire sur ce lien",
+            "body": "Ni texte ni photo. Passe par la capture d'écran, ou colle le "
+                    "texte de la recette à la main.",
+        }
+
+    return render_template("diagnostic.html", url=url, result=result, verdict=verdict)
+
+
 @app.get("/recipe/<int:rid>")
 @locked
 def recipe(rid):

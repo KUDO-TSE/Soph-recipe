@@ -2,7 +2,7 @@
    1. rendre l'application installable (Chrome exige un gestionnaire fetch)
    2. garder les recettes lisibles en cuisine même sans réseau */
 
-var CACHE = "soph-v2";
+var CACHE = "soph-v3";
 
 var SHELL = [
   "/",

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Test d'un lien{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <a class="back" href="{{ url_for('index') }}">Retour</a>
+  <h1>Test d'un lien</h1>
+  <p class="tally">Montre ce que le serveur reçoit vraiment, sans appeler Claude.</p>
+</header>
+
+<form class="sheet" method="get">
+  <label class="field">
+    <span class="field-label">Lien à tester</span>
+    <input type="url" name="url" value="{{ url or '' }}"
+           placeholder="https://www.instagram.com/reel/...">
+  </label>
+  <button class="btn btn-go" type="submit">Tester</button>
+</form>
+
+{% if result %}
+<section class="diag">
+  <h2 class="sheet-h">Résultat</h2>
+  <dl>
+    <dt>Code HTTP</dt>
+    <dd class="{{ 'diag-ok' if result.status == 200 else 'diag-bad' }}">
+      {{ result.status or 'aucune réponse' }}
+    </dd>
+
+    <dt>URL finale</dt>
+    <dd class="diag-url">{{ result.final_url or '—' }}</dd>
+
+    <dt>Titre (og:title)</dt>
+    <dd class="{{ 'diag-ok' if result.title else 'diag-bad' }}">{{ result.title or 'vide' }}</dd>
+
+    <dt>Légende (og:description)</dt>
+    <dd class="{{ 'diag-ok' if result.description else 'diag-bad' }}">{{ result.description or 'vide' }}</dd>
+
+    <dt>Texte de l'image (og:image:alt)</dt>
+    <dd class="{{ 'diag-ok' if result.image_alt else 'diag-bad' }}">{{ result.image_alt or 'vide' }}</dd>
+
+    <dt>Photo</dt>
+    <dd class="{{ 'diag-ok' if result.image_url else 'diag-bad' }}">
+      {{ 'récupérable' if result.image_url else 'vide' }}
+    </dd>
+
+    <dt>Recette structurée (JSON-LD)</dt>
+    <dd class="{{ 'diag-ok' if result.page_text else 'diag-bad' }}">
+      {{ 'trouvée' if result.page_text else 'aucune' }}
+    </dd>
+  </dl>
+
+  <aside class="tip">
+    <b>{{ verdict.head }}</b>
+    <span>{{ verdict.body }}</span>
+  </aside>
+</section>
+{% endif %}
+{% endblock %}

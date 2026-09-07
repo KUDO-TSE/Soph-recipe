@@ -798,3 +798,29 @@ a { color: inherit; }
 
 .working .btn { margin-top: 16px; }
 .working .form-error { margin-top: 16px; max-width: 340px; }
+
+/* ---------- Page de test d'un lien ---------- */
+
+.diag dl { margin: 0; }
+
+.diag dt {
+  margin-top: 14px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.diag dd {
+  margin: 4px 0 0;
+  padding: 10px 13px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--paper);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.diag dd.diag-ok { background: var(--pistachio); }
+.diag dd.diag-bad { color: var(--ink-soft); font-style: italic; }
+.diag dd.diag-url { font-size: 0.78rem; }
+.diag .tip { margin-top: 22px; }

@@ -53,9 +53,12 @@ def detect_platform(url):
 
 def fetch_page(url):
     """Best-effort Open Graph scrape. Returns dict, never raises on a bad page."""
-    out = {"title": "", "description": "", "image_url": "", "page_text": ""}
+    out = {"title": "", "description": "", "image_url": "", "page_text": "",
+           "image_alt": "", "status": 0, "final_url": ""}
     try:
         r = requests.get(url, headers=HEADERS, timeout=20, allow_redirects=True)
+        out["status"] = r.status_code
+        out["final_url"] = r.url
         if r.status_code >= 400:
             return out
         soup = BeautifulSoup(r.text, "html.parser")
@@ -72,6 +75,11 @@ def fetch_page(url):
         out["title"] = meta("og:title", "twitter:title")
         out["description"] = meta("og:description", "twitter:description", "description")
         out["image_url"] = meta("og:image", "og:image:secure_url", "twitter:image")
+
+        # Meta génère automatiquement un texte alternatif pour les images, et il
+        # transcrit souvent le texte visible dessus ("Peut être une image de ... et
+        # du texte qui dit ..."). Sur une recette écrite sur l'image, c'est utile.
+        out["image_alt"] = meta("og:image:alt", "twitter:image:alt")
 
         # Some pages ship a full recipe as schema.org JSON-LD — far better than a caption.
         for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
@@ -334,7 +342,7 @@ def build_draft(url="", text="", upload=None, preloaded_image=None):
 
     if url:
         page = fetch_page(url)
-        for key in ("title", "description", "page_text"):
+        for key in ("title", "description", "image_alt", "page_text"):
             if page.get(key):
                 caption_parts.append(page[key])
         if image is None:

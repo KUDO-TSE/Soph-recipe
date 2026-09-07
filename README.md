@@ -92,6 +92,24 @@ weeks anyway. The screenshot route above gets you the same result with none of t
 ever want hands-off link parsing, a resolver service (Apify, Bright Data, ScrapingBee) is the
 contained option: it's a change to `fetch_page()` and nothing downstream moves.
 
+## Testing a link: /diagnostic
+
+Paste any link at `/diagnostic` and it shows exactly what the server received — HTTP status,
+final URL after redirects, `og:description`, `og:image:alt`, whether a photo and a JSON-LD
+recipe block came back — with a plain verdict on whether automatic import can work. No Claude
+call, so it's instant and free. Use it before concluding a link "doesn't work": it separates
+"Meta blocked us" from "the post has no recipe text in it".
+
+Reels are the hard case. Both `/reel/...` and Facebook's `/share/r/...` links point at video,
+where any `og:description` is usually a like count plus a truncated caption, and `og:image` is
+a video frame that may carry no text at all. For reels, plan on the screenshot route.
+
+Note that `og:image:alt` is worth having: Meta auto-generates alt text that often transcribes
+text visible in the image ("Peut être une image de … et du texte qui dit …"), which on a recipe
+post is sometimes the whole recipe. It's parsed and fed to Claude alongside the caption.
+
+Share tokens (`?stkn=`) are preserved rather than stripped — they may be what grants access.
+
 ## How the import actually works
 
 ```
