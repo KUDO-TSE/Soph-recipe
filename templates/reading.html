@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}On lit la recette{% endblock %}
+
+{% block content %}
+<div class="working" id="reading" data-rid="{{ rid }}">
+  <div class="pot" aria-hidden="true">🍲</div>
+  <p id="reading-msg">On lit la recette…</p>
+  <small id="reading-sub">Ça prend quelques secondes.</small>
+  <p class="form-error" id="reading-error" hidden></p>
+  <a class="btn btn-ghost" id="reading-out" href="{{ url_for('edit', rid=rid) }}" hidden>
+    Écrire la recette à la main
+  </a>
+</div>
+{% endblock %}

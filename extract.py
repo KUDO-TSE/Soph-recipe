@@ -317,12 +317,16 @@ def retranslate(recipe):
     return out
 
 
-def build_draft(url="", text="", upload=None):
-    """Main entry point. Returns (recipe_dict, image_tuple_or_None)."""
+def build_draft(url="", text="", upload=None, preloaded_image=None):
+    """Main entry point. Returns (recipe_dict, image_tuple_or_None).
+
+    `preloaded_image` is an already-shrunk (bytes, mime) tuple — used by the
+    Android share target, where the screenshot arrived before we got here.
+    """
     url = (url or "").strip()
     text = (text or "").strip()
     platform = detect_platform(url)
-    image = shrink(upload) if upload else None
+    image = preloaded_image or (shrink(upload) if upload else None)
     caption_parts = []
 
     if url and not platform:

@@ -53,6 +53,45 @@ survives a reload. Tapping through to the last step increments a "cooked N times
 The `recipes` table is created on boot, so there's no migration step. `/healthz` returns
 `ok` once the database answers.
 
+## Sharing from Instagram (Android)
+
+The installed app declares itself a Web Share Target, so it appears in Android's share
+sheet. Two routes into it:
+
+- **Share the link.** Instagram → ••• → Partager → *Les recettes de Soph*. Android puts the
+  URL in the `text` field, which `/share` pulls out with a regex.
+- **Share a screenshot.** Screenshot the post first, then share the image. This is the
+  reliable route, and the one to use for Reels: it sidesteps Meta's scraping blocks entirely
+  because nothing is fetched from Instagram — Claude's vision reads the recipe off the
+  picture. Works on private accounts you follow, too.
+
+`/share` stores the payload and redirects immediately with a 303 to `/recipe/<id>/lecture`,
+which shows a spinner and calls `/api/extract/<id>`. The parse takes ~10 seconds, far too
+long to leave a POST navigation hanging. The service worker passes non-GET requests straight
+through, so it never interferes with the share POST.
+
+Share target requires the app to be **installed** — it won't show in the share sheet from a
+browser tab. iOS doesn't support this at all; there it would need an Apple Shortcut.
+
+If the session has expired, a share bounces to the login screen and the shared content is
+lost — log in and share again. That's deliberate: leaving `/share` unauthenticated would let
+anyone write rows and images into your database.
+
+## Why there's no "log in as me" option
+
+Meta closed this deliberately. The Instagram Basic Display API — the only one that read
+personal accounts — reached end-of-life in December 2024, specifically to restrict
+third-party access to personal accounts. The Graph API only reads media for accounts you own
+or manage. The oEmbed endpoint returns embed HTML with no caption field. So no amount of
+OAuth gets you a third party's post text.
+
+Session-cookie scraping does work technically, but it pairs your real account's cookie with
+a datacenter IP making non-human requests, which is Meta's bot signature — the realistic
+outcome is a lock on your personal account, and the cookie needs re-harvesting every few
+weeks anyway. The screenshot route above gets you the same result with none of that. If you
+ever want hands-off link parsing, a resolver service (Apify, Bright Data, ScrapingBee) is the
+contained option: it's a change to `fetch_page()` and nothing downstream moves.
+
 ## How the import actually works
 
 ```

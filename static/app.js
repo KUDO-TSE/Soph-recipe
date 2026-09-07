@@ -73,6 +73,36 @@
     }
   }
 
+  /* ---------------- Écran de lecture (partage Android) ---------------- */
+
+  var reading = $("#reading");
+  if (reading) {
+    var rid = reading.getAttribute("data-rid");
+
+    fetch("/api/extract/" + rid, { method: "POST" })
+      .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, d: d }; }); })
+      .then(function (r) {
+        if (r.ok && r.d.next) {
+          window.location.replace(r.d.next);
+          return;
+        }
+        $("#reading-msg").textContent = "Lecture impossible";
+        $("#reading-sub").hidden = true;
+        var err = $("#reading-error");
+        err.textContent = r.d.error || "Le contenu partagé n'a pas pu être lu.";
+        err.hidden = false;
+        $("#reading-out").hidden = false;
+      })
+      .catch(function () {
+        $("#reading-msg").textContent = "Lecture impossible";
+        $("#reading-sub").hidden = true;
+        var err2 = $("#reading-error");
+        err2.textContent = "Pas de réponse du serveur. Vérifie ta connexion.";
+        err2.hidden = false;
+        $("#reading-out").hidden = false;
+      });
+  }
+
   /* ---------------- Import screen ---------------- */
 
   var importForm = $("#import-form");

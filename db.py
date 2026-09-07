@@ -52,6 +52,12 @@ CREATE INDEX IF NOT EXISTS recipes_browse_idx
     ON recipes (is_draft, is_favorite DESC, created_at DESC);
 """
 
+# Appliqué à chaque démarrage : permet de mettre à jour un déploiement existant
+# sans étape de migration manuelle.
+MIGRATIONS = """
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS raw_source TEXT;
+"""
+
 CARD_COLS = """id, title, emoji, servings, total_time, is_favorite, times_cooked,
                source_platform, (image_data IS NOT NULL) AS has_image"""
 
@@ -59,6 +65,7 @@ CARD_COLS = """id, title, emoji, servings, total_time, is_favorite, times_cooked
 def init_db():
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute(SCHEMA)
+        cur.execute(MIGRATIONS)
 
 
 def list_recipes(search=None):
@@ -96,8 +103,9 @@ def create_draft(data, image=None):
         cur.execute(
             """INSERT INTO recipes
                  (title, emoji, source_url, source_platform, servings, total_time,
-                  ingredients, steps, notes, image_data, image_mime, is_draft)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+                  ingredients, steps, notes, image_data, image_mime, raw_source,
+                  is_draft)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
                RETURNING id""",
             (
                 data.get("title") or "Nouvelle recette",
@@ -111,6 +119,7 @@ def create_draft(data, image=None):
                 data.get("notes"),
                 psycopg2.Binary(image_data) if image_data else None,
                 image_mime,
+                data.get("raw_source"),
             ),
         )
         return cur.fetchone()["id"]
@@ -195,3 +204,19 @@ def counts():
 def set_draft(rid, flag):
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute("UPDATE recipes SET is_draft = %s WHERE id = %s", (flag, rid))
+
+
+def get_raw(rid):
+    """Le contenu brut partagé depuis Android, plus la photo si elle est arrivée."""
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute(
+            """SELECT raw_source, source_url, source_platform, image_data, image_mime
+               FROM recipes WHERE id = %s""",
+            (rid,),
+        )
+        return cur.fetchone()
+
+
+def clear_raw(rid):
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE recipes SET raw_source = NULL WHERE id = %s", (rid,))

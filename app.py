@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from functools import wraps
 
 from flask import (
@@ -116,6 +117,85 @@ def api_import():
 def api_blank():
     rid = db.create_draft({"title": "", "ingredients": [], "steps": []})
     return jsonify({"id": rid, "next": url_for("edit", rid=rid)})
+
+
+@app.post("/share")
+@locked
+def share():
+    """Cible de partage Android.
+
+    Instagram envoie soit un lien (dans `text`), soit une capture d'écran
+    (dans `photo`), soit les deux. On enregistre tel quel et on renvoie tout
+    de suite vers l'écran de lecture : la lecture par Claude prend une dizaine
+    de secondes, trop long pour laisser un POST en attente.
+    """
+    text = " ".join(
+        filter(None, [request.form.get("title", ""), request.form.get("text", "")])
+    ).strip()
+    url = (request.form.get("url") or "").strip()
+
+    if not url:
+        found = re.search(r"https?://\S+", text)
+        if found:
+            url = found.group(0).rstrip(").,")
+
+    image = None
+    if "photo" in request.files and request.files["photo"].filename:
+        image = extract.shrink(request.files["photo"].read())
+
+    if not (text or url or image):
+        return redirect(url_for("add"))
+
+    rid = db.create_draft(
+        {
+            "title": "",
+            "raw_source": text,
+            "source_url": url or None,
+            "source_platform": extract.detect_platform(url),
+        },
+        image=image,
+    )
+    return redirect(url_for("reading", rid=rid), code=303)
+
+
+@app.get("/recipe/<int:rid>/lecture")
+@locked
+def reading(rid):
+    if not db.get_recipe(rid):
+        abort(404)
+    return render_template("reading.html", rid=rid)
+
+
+@app.post("/api/extract/<int:rid>")
+@locked
+def api_extract(rid):
+    """Lit le contenu déjà stocké par /share et le transforme en fiche."""
+    raw = db.get_raw(rid)
+    if not raw:
+        return jsonify({"error": "Ce partage n'existe plus."}), 404
+
+    image = None
+    if raw.get("image_data"):
+        image = (bytes(raw["image_data"]), raw.get("image_mime") or "image/jpeg")
+
+    try:
+        recipe_data, fetched_image = extract.build_draft(
+            url=raw.get("source_url") or "",
+            text=raw.get("raw_source") or "",
+            preloaded_image=image,
+        )
+    except extract.ExtractError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        app.logger.exception("share extract failed: %s", exc)
+        return jsonify(
+            {"error": "La lecture a échoué. Ouvre la fiche et écris-la à la main."}
+        ), 500
+
+    db.save_recipe(rid, recipe_data, image=fetched_image if not image else None)
+    db.set_draft(rid, True)
+    db.clear_raw(rid)
+    return jsonify({"next": url_for("edit", rid=rid)})
 
 
 @app.get("/recipe/<int:rid>")
@@ -237,6 +317,19 @@ def manifest():
                 "scope": "/",
                 "background_color": "#F2F5F1",
                 "theme_color": "#16261E",
+                "share_target": {
+                    "action": "/share",
+                    "method": "POST",
+                    "enctype": "multipart/form-data",
+                    "params": {
+                        "title": "title",
+                        "text": "text",
+                        "url": "url",
+                        "files": [
+                            {"name": "photo", "accept": ["image/*"]}
+                        ],
+                    },
+                },
                 "icons": [
                     {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"},
                     {
