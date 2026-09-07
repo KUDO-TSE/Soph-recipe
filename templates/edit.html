@@ -10,6 +10,11 @@
   {% endif %}
 </header>
 
+<form method="post" action="{{ url_for('translate', rid=r.id) }}" class="fix-row">
+  <button class="btn btn-ghost btn-sm" type="submit">Passer en français et en métrique</button>
+  <p class="hint">Réécrit la fiche en français et convertit les onces, cups et °F en g, ml et °C.</p>
+</form>
+
 <form class="sheet" method="post" action="{{ url_for('save', rid=r.id) }}"
       enctype="multipart/form-data" id="edit-form">
   <input type="hidden" name="payload" id="payload">

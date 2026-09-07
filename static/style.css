@@ -54,7 +54,7 @@ a { color: inherit; }
 
 .shelf-head h1 {
   margin: 0;
-  font-size: 2.5rem;
+  font-size: clamp(2rem, 9vw, 2.5rem);
   line-height: 0.98;
 }
 
@@ -144,7 +144,7 @@ a { color: inherit; }
   border-top: var(--edge);
   padding: 11px 13px 13px;
   background: var(--yolk);
-  font-size: 1.12rem;
+  font-size: clamp(0.98rem, 4vw, 1.12rem);
   line-height: 1.15;
 }
 
@@ -159,15 +159,16 @@ a { color: inherit; }
 
 .add-pill {
   position: fixed;
-  left: 50%;
+  left: 18px;
+  right: 18px;
   bottom: calc(20px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
   z-index: 40;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
   min-height: var(--tap);
-  padding: 0 26px;
+  padding: 0 18px;
   border: var(--edge);
   border-radius: 100px;
   background: var(--tomato);
@@ -175,12 +176,12 @@ a { color: inherit; }
   color: var(--paper);
   font-family: "Baloo 2", sans-serif;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 4vw, 1.1rem);
   text-decoration: none;
 }
 
 .add-pill span { font-size: 1.5rem; line-height: 1; }
-.add-pill:active { transform: translateX(-50%) translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.add-pill:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
 
 .blank {
   margin-top: 28px;
@@ -237,7 +238,7 @@ a { color: inherit; }
   border-bottom: var(--edge);
 }
 
-.band h1 { margin: 0; font-size: 1.95rem; line-height: 1.08; }
+.band h1 { margin: 0; font-size: clamp(1.5rem, 6.5vw, 1.95rem); line-height: 1.08; }
 .band-emoji { margin-right: 8px; }
 
 .facts {
@@ -273,7 +274,7 @@ a { color: inherit; }
   color: var(--ink);
   font-family: "Baloo 2", sans-serif;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: clamp(0.88rem, 3.6vw, 1.05rem);
   cursor: pointer;
 }
 
@@ -376,7 +377,9 @@ a { color: inherit; }
   border-top: 2px dashed var(--ink-soft);
 }
 
-.card-foot form { margin: 0; }
+.card-foot > .btn,
+.card-foot form { flex: 1 1 140px; min-width: 0; margin: 0; }
+.card-foot form .btn { width: 100%; }
 
 /* ---------- Buttons & forms ---------- */
 
@@ -385,7 +388,7 @@ a { color: inherit; }
   align-items: center;
   justify-content: center;
   min-height: var(--tap);
-  padding: 0 22px;
+  padding: 0 clamp(13px, 4vw, 22px);
   border: var(--edge);
   border-radius: 100px;
   background: var(--paper);
@@ -393,7 +396,8 @@ a { color: inherit; }
   color: var(--ink);
   font-family: "Baloo 2", sans-serif;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: clamp(0.95rem, 3.6vw, 1.05rem);
+  text-align: center;
   text-decoration: none;
   cursor: pointer;
 }
@@ -405,7 +409,7 @@ a { color: inherit; }
 .btn-sm { min-height: 44px; font-size: 0.95rem; padding: 0 16px; }
 
 .page-head { padding: 24px 0 18px; }
-.page-head h1 { margin: 12px 0 0; font-size: 1.9rem; line-height: 1.1; }
+.page-head h1 { margin: 12px 0 0; font-size: clamp(1.5rem, 6.5vw, 1.9rem); line-height: 1.1; }
 
 .back {
   display: inline-block;
@@ -453,9 +457,9 @@ a { color: inherit; }
   font-size: 0.9rem;
 }
 
-.field-pair { display: flex; gap: 10px; }
-.field-pair .field:first-child { flex: 0 0 80px; }
-.field-pair .field { flex: 1; }
+.field-pair { display: flex; flex-wrap: wrap; gap: 10px; }
+.field-pair .field:first-child { flex: 0 0 78px; }
+.field-pair .field { flex: 1 1 120px; min-width: 0; }
 
 .hint {
   margin: -4px 0 18px;
@@ -512,7 +516,7 @@ a { color: inherit; }
   color: inherit;
 }
 
-.row .qty { flex: 0 0 88px; min-width: 0; }
+.row .qty { flex: 0 0 clamp(70px, 23vw, 88px); min-width: 0; }
 .row .item, .row textarea { flex: 1; min-width: 0; }
 .row textarea { line-height: 1.45; resize: vertical; }
 
@@ -623,8 +627,8 @@ a { color: inherit; }
 }
 
 .cook-no {
-  width: 66px;
-  height: 66px;
+  width: clamp(54px, 16vw, 66px);
+  height: clamp(54px, 16vw, 66px);
   display: grid;
   place-items: center;
   border: var(--edge);
@@ -632,14 +636,14 @@ a { color: inherit; }
   background: var(--tomato);
   box-shadow: var(--drop);
   color: var(--paper);
-  font: 800 2.1rem/1 "Baloo 2", sans-serif;
+  font: 800 clamp(1.7rem, 7vw, 2.1rem)/1 "Baloo 2", sans-serif;
 }
 
 .cook-text {
   margin: 0;
   font-family: "Baloo 2", sans-serif;
   font-weight: 600;
-  font-size: 1.85rem;
+  font-size: clamp(1.4rem, 6vw, 1.85rem);
   line-height: 1.25;
 }
 
@@ -684,4 +688,90 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
   .tile:active, .btn:active, .add-pill:active, .cook-nav button:active { transform: none; }
+}
+
+/* ---------- Bandeau d'installation ---------- */
+
+.install {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: var(--edge);
+  border-radius: var(--r-md);
+  background: var(--pistachio);
+  box-shadow: var(--drop);
+}
+
+.install-text { flex: 1; min-width: 0; }
+
+.install-text b {
+  display: block;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.install-text span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.install-go {
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 18px;
+  border: var(--edge);
+  border-radius: 100px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 1rem "Baloo 2", sans-serif;
+  cursor: pointer;
+}
+
+.install-x {
+  position: absolute;
+  top: -11px;
+  right: -7px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 1.1rem/1 "Baloo 2", sans-serif;
+  cursor: pointer;
+}
+
+/* ---------- Bouton de conversion (écran de modification) ---------- */
+
+.fix-row {
+  margin: 0 0 22px;
+  padding: 14px 16px;
+  border: 2px dashed var(--ink-soft);
+  border-radius: var(--r-md);
+}
+
+.fix-row .btn { width: 100%; }
+.fix-row .hint { margin: 10px 0 0; }
+
+/* ---------- Très petits écrans (iPhone SE et compagnie) ---------- */
+
+@media (max-width: 360px) {
+  :root { --pad: 14px; }
+  body { font-size: 17px; }
+  .shelf { gap: 12px; }
+  .tile-name { padding: 9px 10px 11px; }
+  .tabs { gap: 8px; }
+  .tab b { min-width: 22px; height: 22px; margin-left: 4px; }
+  .facts span { padding: 3px 10px; font-size: 0.78rem; }
+  .cook-nav { grid-template-columns: 60px 1fr; }
 }

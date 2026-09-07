@@ -21,20 +21,34 @@ survives a reload. Tapping through to the last step increments a "cooked N times
 
 1. **Push this repo to GitHub** (commands at the bottom).
 2. In Railway: **New Project → Deploy from GitHub repo → `KUDO-TSE/Soph-recipe`**.
-3. On the project canvas: **+ New → Database → Add PostgreSQL**. Railway injects
-   `DATABASE_URL` into the web service automatically — don't set it by hand.
+3. On the project canvas: **+ New → Database → Add PostgreSQL**.
 4. Open the web service → **Variables** → add:
 
    | Variable | Value |
    | --- | --- |
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` — typed literally, braces included |
    | `ANTHROPIC_API_KEY` | your API key from console.anthropic.com |
    | `SECRET_KEY` | any long random string (signs the session cookie) |
    | `APP_PIN` | a 4–6 digit code, or leave it out for no lock |
    | `CLAUDE_MODEL` | optional, defaults to `claude-sonnet-5` |
 
+   Adding a Postgres service does **not** inject `DATABASE_URL` into the web service —
+   only into the database service itself. You have to reference it across, and the
+   `${{Postgres.DATABASE_URL}}` syntax keeps it in sync if credentials rotate. If the
+   internal hostname doesn't resolve on first boot, use `${{Postgres.DATABASE_PUBLIC_URL}}`.
+
+   The repo's app files must sit at the **repo root**, not inside a subfolder, or Railpack
+   won't detect a Python app. Alternatively set **Settings → Build → Root Directory**.
+
 5. Web service → **Settings → Networking → Generate Domain**.
-6. Open that domain on the phone, then **Share → Add to Home Screen**. It installs as a
-   standalone app with its own icon, no browser chrome.
+6. Open that domain on the phone and install it:
+   - **Android / Chrome:** a green "Installe les recettes" banner appears after a few
+     seconds — tap **Installer**. Chrome only offers this over HTTPS with a registered
+     service worker, both of which Railway's domain satisfies.
+   - **iPhone / Safari:** iOS never offers automatic installation, so the app shows the
+     manual route instead — **Partager → Sur l'écran d'accueil**.
+
+   Either way it lands as a standalone app with its own icon and no browser chrome.
 
 The `recipes` table is created on boot, so there's no migration step. `/healthz` returns
 `ok` once the database answers.
@@ -86,6 +100,29 @@ export $(grep -v '^#' .env | xargs)
 python app.py               # http://localhost:5000
 ```
 
+## Language and units
+
+Every screen, button, error and empty state is in French, including messages that come back
+from the server. Technical details (a database connection string, an API status code) are
+tucked behind a "Détail technique" fold rather than shown to whoever is cooking.
+
+**Recipe content is forced into French and metric**, whatever language the source post was
+in. `SYSTEM_PROMPT` in `extract.py` carries the conversion table — ounces, pounds, cups,
+pints, inches and °F all get converted, with per-ingredient cup weights (flour 120 g, sugar
+200 g, butter 225 g…) since a cup of flour and a cup of sugar are not the same mass.
+Tablespoons and teaspoons stay as `c. à soupe` / `c. à café`, which is what a French kitchen
+actually uses. Rounding is deliberately cook-friendly: 24 oz becomes 680 g, not 672 g.
+
+For cards saved before this was enforced, the edit screen has **Passer en français et en
+métrique** — it sends the stored card back through the same rules and rewrites it in place.
+No need to re-import from the original link.
+
+## Offline
+
+`static/sw.js` caches the shell, the stylesheet and every recipe photo it has served. A
+recipe you've opened once stays readable in the kitchen with no signal; adding a new one
+needs the network. Bump `CACHE` in that file to force clients to refresh after a redeploy.
+
 ## Notes
 
 - Photos are stored as `bytea` in Postgres, not on disk, so no Railway volume is needed and
@@ -96,3 +133,6 @@ python app.py               # http://localhost:5000
   6 hours.
 - `APP_PIN` is a soft lock for a family app on a public URL, not real authentication. Don't
   put anything sensitive in here.
+- Layout is verified down to 320px portrait. Every call to action is anchored to both screen
+  edges or set to wrap, and type uses `clamp()` rather than fixed sizes, so nothing clips on
+  a small phone. The `@media (max-width: 360px)` block tightens padding for iPhone SE sizes.

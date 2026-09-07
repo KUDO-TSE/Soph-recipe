@@ -13,7 +13,10 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 @contextmanager
 def get_conn():
     if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL is not set")
+        raise RuntimeError(
+            "La base de données n'est pas connectée : la variable DATABASE_URL "
+            "est absente du service."
+        )
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     try:
         yield conn
@@ -187,3 +190,8 @@ def counts():
                FROM recipes WHERE is_draft = FALSE"""
         )
         return cur.fetchone()
+
+
+def set_draft(rid, flag):
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE recipes SET is_draft = %s WHERE id = %s", (flag, rid))

@@ -4,7 +4,13 @@
 {% block content %}
 <div class="blank">
   <p class="blank-big">Ça n'a pas marché.</p>
-  <p class="detail">{{ detail }}</p>
+  <p>{{ message or "L'application n'arrive pas à joindre ses recettes pour le moment." }}</p>
+  {% if detail %}
+  <details class="fold">
+    <summary>Détail technique</summary>
+    <p class="detail">{{ detail }}</p>
+  </details>
+  {% endif %}
   <a class="btn btn-ghost" href="{{ url_for('index') }}">Revenir à l'étagère</a>
 </div>
 {% endblock %}

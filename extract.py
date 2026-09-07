@@ -6,6 +6,7 @@ Two stages:
 """
 
 import base64
+import logging
 import io
 import json
 import os
@@ -125,14 +126,45 @@ Markdown. Structure exacte :
   "notes": "astuce courte, ou chaîne vide"
 }
 
-Règles :
-- Écris dans la langue de la publication d'origine. Si elle est en anglais, garde l'anglais.
+## Langue
+
+Écris TOUT en français : titre, ingrédients, étapes, notes. Peu importe la langue de la \
+publication d'origine. Si elle est en anglais, en espagnol ou dans une autre langue, \
+traduis. Utilise les noms culinaires français usuels ("raviolis", "crème épaisse", \
+"cassonade", "levure chimique"), pas du mot-à-mot.
+
+## Unités : système métrique uniquement
+
+Ne laisse JAMAIS d'once, de livre, de cup, de pinte, de pouce ni de degré Fahrenheit dans \
+la fiche. Convertis tout, puis arrondis à un nombre que l'on peut lire en cuisinant.
+
+Poids et volumes :
+- 1 oz = 28 g · 1 lb = 450 g · 1 fl oz = 30 ml · 1 pint = 475 ml · 1 quart = 950 ml
+- 1 cup = 240 ml pour un liquide
+- 1 cup d'un ingrédient sec se convertit en poids : farine 120 g · sucre 200 g · \
+cassonade 180 g · beurre 225 g · riz 185 g · sucre glace 120 g · cacao 100 g · \
+fromage râpé 100 g · pépites de chocolat 170 g · noix concassées 120 g
+- 1 tablespoon = 1 c. à soupe · 1 teaspoon = 1 c. à café (garde ces deux-là en cuillères, \
+c'est ce qu'on utilise en cuisine française)
+- Au-delà de 1000 g écris en kg (1,2 kg), au-delà de 1000 ml écris en litres (1,5 l)
+
+Températures et longueurs :
+- Fahrenheit vers Celsius : (F − 32) ÷ 1,8, arrondi aux 5 °C les plus proches \
+(350 °F = 180 °C, 375 °F = 190 °C, 425 °F = 220 °C)
+- 1 inch = 2,5 cm
+
+Arrondis comme un cuisinier, pas comme une calculatrice : 24 oz devient 680 g, pas 672 g. \
+1,5 lb devient 700 g. Utilise la virgule décimale française (1,5 kg).
+
+## Contenu
+
 - Le titre nomme le plat, jamais l'auteur ni le compte : "Gâteau au yaourt", pas \
 "La recette de Marie".
-- Une étape = une action. Phrases courtes, verbes simples, pas de jargon. Indique les \
-températures et les durées dans l'étape concernée.
+- Une étape = une action. Phrases courtes, verbes simples à l'impératif, pas de jargon. \
+Indique les températures et les durées dans l'étape concernée.
 - "qty" peut être vide si la publication ne donne pas de quantité. N'invente pas de \
-quantités précises quand elles sont absentes : mets une quantité vide plutôt qu'un chiffre faux.
+quantités précises quand elles sont absentes : mets une quantité vide plutôt qu'un \
+chiffre faux.
 - Si la photo contient du texte (recette écrite sur l'image), lis-le et sers-t'en.
 - Si tu ne trouves vraiment aucune recette, renvoie {"error": "aucune recette trouvée"}.
 """
@@ -185,7 +217,17 @@ def structure(text, image=None, source_url=None):
         raise ExtractError(f"Impossible de joindre l'API Claude : {e}")
 
     if r.status_code >= 400:
-        raise ExtractError(f"L'API Claude a répondu {r.status_code} : {r.text[:300]}")
+        logging.error("Anthropic API %s: %s", r.status_code, r.text[:300])
+        if r.status_code in (401, 403):
+            msg = ("La clé ANTHROPIC_API_KEY est refusée. Vérifie-la dans les "
+                   "variables Railway.")
+        elif r.status_code == 429:
+            msg = "Trop de demandes d'un coup. Attends une minute et réessaie."
+        elif r.status_code >= 500:
+            msg = "Le service Claude est indisponible pour le moment. Réessaie."
+        else:
+            msg = "La lecture de la recette a échoué. Réessaie."
+        raise ExtractError(msg)
 
     blocks = r.json().get("content", [])
     raw = "\n".join(b.get("text", "") for b in blocks if b.get("type") == "text").strip()
@@ -228,6 +270,51 @@ def normalise(data):
         "steps": steps,
         "notes": str(data.get("notes") or "").strip() or None,
     }
+
+
+def retranslate(row):
+    """Repasse une recette déjà enregistrée en français et en unités métriques."""
+    lines = [f"Titre : {row.get('title') or ''}"]
+    if row.get("servings"):
+        lines.append(f"Pour : {row['servings']}")
+    if row.get("total_time"):
+        lines.append(f"Durée : {row['total_time']}")
+    lines.append("Ingrédients :")
+    for ing in row.get("ingredients") or []:
+        lines.append(f"- {ing.get('qty', '')} {ing.get('item', '')}".rstrip())
+    lines.append("Étapes :")
+    for i, step in enumerate(row.get("steps") or [], 1):
+        lines.append(f"{i}. {step}")
+    if row.get("notes"):
+        lines.append(f"Note : {row['notes']}")
+
+    return structure("\n".join(lines), source_url=row.get("source_url"))
+
+
+def retranslate(recipe):
+    """Re-run an already-saved recipe through the same French + metric rules.
+
+    For cards imported before the prompt enforced French, or pasted in by hand
+    with imperial units.
+    """
+    lines = [f"Titre : {recipe.get('title') or ''}"]
+    if recipe.get("servings"):
+        lines.append(f"Pour : {recipe['servings']}")
+    if recipe.get("total_time"):
+        lines.append(f"Durée : {recipe['total_time']}")
+    lines.append("\nIngrédients :")
+    for ing in recipe.get("ingredients") or []:
+        qty = (ing.get("qty") or "").strip()
+        lines.append(f"- {qty} {ing.get('item', '')}".replace("-  ", "- "))
+    lines.append("\nÉtapes :")
+    for i, step in enumerate(recipe.get("steps") or [], 1):
+        lines.append(f"{i}. {step}")
+    if recipe.get("notes"):
+        lines.append(f"\nNote : {recipe['notes']}")
+
+    out = structure("\n".join(lines))
+    out["emoji"] = out.get("emoji") or recipe.get("emoji")
+    return out
 
 
 def build_draft(url="", text="", upload=None):

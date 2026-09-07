@@ -5,6 +5,7 @@ from functools import wraps
 from flask import (
     Flask,
     Response,
+    send_from_directory,
     abort,
     jsonify,
     redirect,
@@ -66,7 +67,11 @@ def index():
         stats = db.counts()
     except Exception as exc:
         app.logger.error("index failed: %s", exc)
-        return render_template("error.html", detail=str(exc)), 500
+        return render_template(
+            "error.html",
+            message="L'application n'arrive pas à joindre la base de données.",
+            detail=str(exc),
+        ), 500
     return render_template("index.html", recipes=recipes, search=search, stats=stats)
 
 
@@ -95,8 +100,13 @@ def api_import():
     except extract.ExtractError as exc:
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
-        app.logger.exception("import failed")
-        return jsonify({"error": f"Erreur inattendue : {exc}"}), 500
+        app.logger.exception("import failed: %s", exc)
+        return jsonify(
+            {
+                "error": "Quelque chose a bloqué de notre côté. Réessaie, ou colle "
+                         "directement le texte de la recette."
+            }
+        ), 500
 
     return jsonify({"id": rid, "next": url_for("edit", rid=rid)})
 
@@ -165,6 +175,30 @@ def cooked(rid):
     return jsonify({"times_cooked": db.mark_cooked(rid)})
 
 
+@app.post("/recipe/<int:rid>/translate")
+@locked
+def translate(rid):
+    """Convertit une recette existante en français + unités métriques."""
+    row = db.get_recipe(rid)
+    if not row:
+        abort(404)
+    was_draft = row["is_draft"]
+    try:
+        fixed = extract.retranslate(dict(row))
+    except extract.ExtractError as exc:
+        return render_template("error.html", message=str(exc)), 502
+    except Exception as exc:
+        app.logger.exception("translate failed: %s", exc)
+        return render_template(
+            "error.html", message="La conversion a échoué. Réessaie dans un instant."
+        ), 500
+
+    db.save_recipe(rid, fixed)
+    if was_draft:
+        db.set_draft(rid, True)
+    return redirect(url_for("edit", rid=rid))
+
+
 @app.get("/image/<int:rid>")
 @locked
 def image(rid):
@@ -178,6 +212,16 @@ def image(rid):
     )
 
 
+@app.get("/sw.js")
+def service_worker():
+    """Servi depuis la racine pour que le scope couvre tout le site."""
+    res = send_from_directory(app.static_folder, "sw.js")
+    res.headers["Content-Type"] = "application/javascript; charset=utf-8"
+    res.headers["Service-Worker-Allowed"] = "/"
+    res.headers["Cache-Control"] = "no-cache"
+    return res
+
+
 @app.get("/manifest.webmanifest")
 def manifest():
     return Response(
@@ -186,7 +230,11 @@ def manifest():
                 "name": "Les recettes de Soph",
                 "short_name": "Recettes",
                 "start_url": "/",
+                "description": "Les recettes de la maison, prêtes à cuisiner.",
                 "display": "standalone",
+                "orientation": "portrait",
+                "lang": "fr",
+                "scope": "/",
                 "background_color": "#F2F5F1",
                 "theme_color": "#16261E",
                 "icons": [
@@ -215,7 +263,9 @@ def healthz():
 
 @app.errorhandler(404)
 def not_found(_):
-    return render_template("error.html", detail="Cette recette n'existe pas ou plus."), 404
+    return render_template(
+        "error.html", message="Cette recette n'existe pas, ou elle a été supprimée."
+    ), 404
 
 
 if __name__ == "__main__":

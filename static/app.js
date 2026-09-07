@@ -6,6 +6,73 @@
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
 
+  /* ---------------- Installation sur l'écran d'accueil ---------------- */
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function () {});
+    });
+  }
+
+  var standalone = window.matchMedia("(display-mode: standalone)").matches ||
+                   window.navigator.standalone === true;
+  var isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  var HIDE_KEY = "soph-install-hidden";
+
+  var banner = function (html, onInstall) {
+    var el = document.createElement("div");
+    el.className = "install";
+    var text = document.createElement("div");
+    text.className = "install-text";
+    text.innerHTML = html;
+    el.appendChild(text);
+    var close = document.createElement("button");
+    close.className = "install-x";
+    close.type = "button";
+    close.setAttribute("aria-label", "Masquer");
+    close.textContent = "×";
+    close.addEventListener("click", function () {
+      el.remove();
+      try { localStorage.setItem(HIDE_KEY, "1"); } catch (e) {}
+    });
+    el.appendChild(close);
+    if (onInstall) {
+      var go = document.createElement("button");
+      go.className = "install-go";
+      go.type = "button";
+      go.textContent = "Installer";
+      go.addEventListener("click", function () { onInstall(el); });
+      el.appendChild(go);
+    }
+    document.body.appendChild(el);
+  };
+
+  var hidden = false;
+  try { hidden = localStorage.getItem(HIDE_KEY) === "1"; } catch (e) {}
+
+  if (!standalone && !hidden) {
+    // Chrome / Android : le navigateur nous prévient qu'il peut installer.
+    window.addEventListener("beforeinstallprompt", function (ev) {
+      ev.preventDefault();
+      banner(
+        "<b>Installe les recettes</b><span>Pour l'ouvrir comme une vraie app, " +
+        "sans barre de navigateur.</span>",
+        function (el) {
+          ev.prompt();
+          ev.userChoice.then(function () { el.remove(); });
+        }
+      );
+    });
+
+    // iOS : Safari n'offre jamais d'installation automatique, il faut expliquer.
+    if (isIOS) {
+      banner(
+        "<b>Installe les recettes</b><span>Appuie sur <b>Partager</b> en bas de " +
+        "l'écran, puis sur <b>Sur l'écran d'accueil</b>.</span>"
+      );
+    }
+  }
+
   /* ---------------- Import screen ---------------- */
 
   var importForm = $("#import-form");
