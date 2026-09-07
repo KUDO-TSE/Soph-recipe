@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Problème{% endblock %}
+
+{% block content %}
+<div class="blank">
+  <p class="blank-big">Ça n'a pas marché.</p>
+  <p class="detail">{{ detail }}</p>
+  <a class="btn btn-ghost" href="{{ url_for('index') }}">Revenir à l'étagère</a>
+</div>
+{% endblock %}

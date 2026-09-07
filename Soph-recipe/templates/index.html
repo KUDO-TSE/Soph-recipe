@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header class="shelf-head">
+  <h1>Les recettes<br>de Soph</h1>
+  <p class="tally">
+    {% if stats and stats.total %}
+      {{ stats.total }} recette{{ 's' if stats.total > 1 }} sur l'étagère
+      {%- if stats.cooked %} · cuisinées {{ stats.cooked }} fois{% endif %}
+    {% else %}
+      L'étagère est vide pour le moment
+    {% endif %}
+  </p>
+
+  {% if stats and stats.total > 5 %}
+  <form class="find" action="{{ url_for('index') }}" method="get" role="search">
+    <input type="search" name="q" value="{{ search }}" placeholder="Chercher un plat ou un ingrédient"
+           aria-label="Chercher une recette" enterkeyhint="search">
+  </form>
+  {% endif %}
+</header>
+
+{% if recipes %}
+<ul class="shelf">
+  {% for r in recipes %}
+  <li>
+    <a class="tile" href="{{ url_for('recipe', rid=r.id) }}">
+      <span class="tile-photo">
+        {% if r.has_image %}
+          <img src="{{ url_for('image', rid=r.id) }}" alt="" loading="lazy">
+        {% else %}
+          <span class="tile-nophoto">{{ r.emoji or '🍽️' }}</span>
+        {% endif %}
+        {% if r.is_favorite %}<span class="pin" aria-label="Recette préférée">★</span>{% endif %}
+      </span>
+      <span class="tile-name">
+        {{ r.title }}
+        {% if r.total_time %}<small>{{ r.total_time }}</small>{% endif %}
+      </span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% elif search %}
+<div class="blank">
+  <p class="blank-big">Rien trouvé pour « {{ search }} »</p>
+  <a class="btn btn-ghost" href="{{ url_for('index') }}">Voir toutes les recettes</a>
+</div>
+{% else %}
+<div class="blank">
+  <p class="blank-big">Ajoute ta première recette.</p>
+  <p>Trouve un plat sur Instagram ou Facebook, copie le lien, et il arrive ici en fiche prête à cuisiner.</p>
+</div>
+{% endif %}
+
+<a class="add-pill" href="{{ url_for('add') }}">
+  <span aria-hidden="true">+</span> Ajouter une recette
+</a>
+{% endblock %}
