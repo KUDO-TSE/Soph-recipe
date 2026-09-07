@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Vérifier l'installation{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <a class="back" href="{{ url_for('index') }}">Retour</a>
+  <h1>Vérifier l'installation</h1>
+  <p class="tally">Chrome exige que tout soit vert pour proposer l'installation.</p>
+</header>
+
+<section class="diag">
+  <dl id="checks">
+    <dt>Connexion sécurisée (HTTPS)</dt>
+    <dd id="c-https">…</dd>
+
+    <dt>Fichier manifest accessible</dt>
+    <dd id="c-manifest">…</dd>
+
+    <dt>Icônes 192 et 512 px</dt>
+    <dd id="c-icons">…</dd>
+
+    <dt>Service worker actif</dt>
+    <dd id="c-sw">…</dd>
+
+    <dt>Chrome propose l'installation</dt>
+    <dd id="c-prompt">…</dd>
+
+    <dt>Déjà installée</dt>
+    <dd id="c-standalone">…</dd>
+
+    <dt>Navigateur</dt>
+    <dd id="c-browser">…</dd>
+  </dl>
+
+  <button class="btn btn-go" id="install-now" hidden>Installer maintenant</button>
+  <button class="btn btn-ghost" id="reset-hidden">Réafficher le bandeau d'installation</button>
+
+  <aside class="tip" id="verdict" hidden><b></b><span></span></aside>
+</section>
+
+<script src="{{ url_for('static', filename='install-check.js') }}" defer></script>
+{% endblock %}

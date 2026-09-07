@@ -8,24 +8,48 @@
 
   /* ---------------- Installation sur l'écran d'accueil ---------------- */
 
+  // Enregistré tout de suite, pas sur l'événement load : Chrome ne considère le
+  // site installable qu'une fois le service worker actif, et attendre load
+  // retardait ça d'un chargement de page entier.
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker.register("/sw.js").catch(function () {});
-    });
+    navigator.serviceWorker.register("/sw.js").catch(function () {});
   }
 
   var standalone = window.matchMedia("(display-mode: standalone)").matches ||
                    window.navigator.standalone === true;
-  var isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isAndroid = /android/i.test(navigator.userAgent);
   var HIDE_KEY = "soph-install-hidden";
 
-  var banner = function (html, onInstall) {
+  var hidden = false;
+  try {
+    hidden = localStorage.getItem(HIDE_KEY) === "1" ||
+             localStorage.getItem("soph-installed") === "1";
+  } catch (e) {}
+
+  var shown = false;
+
+  var showInstall = function (html, onInstall) {
+    if (shown || standalone || hidden) return;
+    shown = true;
+
     var el = document.createElement("div");
     el.className = "install";
+
     var text = document.createElement("div");
     text.className = "install-text";
     text.innerHTML = html;
     el.appendChild(text);
+
+    if (onInstall) {
+      var go = document.createElement("button");
+      go.className = "install-go";
+      go.type = "button";
+      go.textContent = "Installer";
+      go.addEventListener("click", function () { onInstall(el); });
+      el.appendChild(go);
+    }
+
     var close = document.createElement("button");
     close.className = "install-x";
     close.type = "button";
@@ -36,40 +60,53 @@
       try { localStorage.setItem(HIDE_KEY, "1"); } catch (e) {}
     });
     el.appendChild(close);
-    if (onInstall) {
-      var go = document.createElement("button");
-      go.className = "install-go";
-      go.type = "button";
-      go.textContent = "Installer";
-      go.addEventListener("click", function () { onInstall(el); });
-      el.appendChild(go);
-    }
+
     document.body.appendChild(el);
   };
 
-  var hidden = false;
-  try { hidden = localStorage.getItem(HIDE_KEY) === "1"; } catch (e) {}
+  var oneTap = function () {
+    var ev = window.__installEvent;
+    if (!ev) return false;
+    showInstall(
+      "<b>Installe les recettes</b><span>Pour l'ouvrir comme une vraie app, et " +
+      "pouvoir partager depuis Instagram.</span>",
+      function (el) {
+        ev.prompt();
+        (ev.userChoice || Promise.resolve()).then(function () { el.remove(); });
+      }
+    );
+    return true;
+  };
 
+  // Si l'événement est déjà arrivé (capturé dans le <head>), on l'utilise.
+  // Sinon on attend qu'il arrive, avec un repli manuel si rien ne vient :
+  // beforeinstallprompt ne se déclenche jamais sur iOS, ni sur Firefox, et pas
+  // toujours au premier chargement sur Chrome.
   if (!standalone && !hidden) {
-    // Chrome / Android : le navigateur nous prévient qu'il peut installer.
-    window.addEventListener("beforeinstallprompt", function (ev) {
-      ev.preventDefault();
-      banner(
-        "<b>Installe les recettes</b><span>Pour l'ouvrir comme une vraie app, " +
-        "sans barre de navigateur.</span>",
-        function (el) {
-          ev.prompt();
-          ev.userChoice.then(function () { el.remove(); });
-        }
-      );
-    });
+    window.addEventListener("install-ready", oneTap);
 
-    // iOS : Safari n'offre jamais d'installation automatique, il faut expliquer.
-    if (isIOS) {
-      banner(
-        "<b>Installe les recettes</b><span>Appuie sur <b>Partager</b> en bas de " +
-        "l'écran, puis sur <b>Sur l'écran d'accueil</b>.</span>"
-      );
+    if (!oneTap()) {
+      setTimeout(function () {
+        if (oneTap()) return;
+        if (isIOS) {
+          showInstall(
+            "<b>Installe les recettes</b><span>Appuie sur <b>Partager</b> en bas " +
+            "de l'écran, puis sur <b>Sur l'écran d'accueil</b>.</span>"
+          );
+        } else if (isAndroid) {
+          showInstall(
+            "<b>Installe les recettes</b><span>Ouvre le menu <b>⋮</b> en haut à " +
+            "droite, puis <b>Installer l'application</b>.</span>"
+          );
+        } else {
+          showInstall(
+            "<b>Installe les recettes</b><span>Dans Chrome, clique sur l'icône " +
+            "d'installation dans la barre d'adresse, ou menu <b>⋮</b> puis " +
+            "<b>Installer</b>. <a href=\"/installation\">Vérifier l'installation</a>" +
+            "</span>"
+          );
+        }
+      }, 2500);
     }
   }
 

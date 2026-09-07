@@ -41,14 +41,27 @@ survives a reload. Tapping through to the last step increments a "cooked N times
    won't detect a Python app. Alternatively set **Settings → Build → Root Directory**.
 
 5. Web service → **Settings → Networking → Generate Domain**.
-6. Open that domain on the phone and install it:
+6. Open that domain on the phone and install it. If nothing is offered, go to
+   **`/installation`** — it checks each condition Chrome requires (HTTPS, manifest, both
+   icon sizes, an *active* service worker, browser support) and tells you which one is
+   failing, with an **Installer maintenant** button when everything passes.
+
+   Two things that reliably confuse this: the service worker only becomes active on the
+   **second** page load, so a first visit often can't offer installation; and desktop Chrome
+   never shows a banner — it puts an install icon in the address bar instead. Firefox and
+   desktop Safari can't install web apps at all.
+
+   Install routes:
    - **Android / Chrome:** a green "Installe les recettes" banner appears after a few
      seconds — tap **Installer**. Chrome only offers this over HTTPS with a registered
      service worker, both of which Railway's domain satisfies.
    - **iPhone / Safari:** iOS never offers automatic installation, so the app shows the
      manual route instead — **Partager → Sur l'écran d'accueil**.
 
-   Either way it lands as a standalone app with its own icon and no browser chrome.
+   Either way it lands as a standalone app with its own icon and no browser chrome. The
+   in-app banner falls back to written instructions for the current platform whenever Chrome
+   doesn't fire `beforeinstallprompt`, so there is always a visible route in. Dismissing it is
+   remembered; `/installation` has a button to bring it back.
 
 The `recipes` table is created on boot, so there's no migration step. `/healthz` returns
 `ok` once the database answers.

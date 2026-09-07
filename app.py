@@ -198,6 +198,13 @@ def api_extract(rid):
     return jsonify({"next": url_for("edit", rid=rid)})
 
 
+@app.get("/installation")
+@locked
+def installation():
+    """Diagnostic d'installation : dit laquelle des conditions de Chrome manque."""
+    return render_template("installation.html")
+
+
 @app.get("/diagnostic")
 @locked
 def diagnostic():

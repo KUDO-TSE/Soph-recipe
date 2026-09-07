@@ -2,12 +2,13 @@
    1. rendre l'application installable (Chrome exige un gestionnaire fetch)
    2. garder les recettes lisibles en cuisine même sans réseau */
 
-var CACHE = "soph-v3";
+var CACHE = "soph-v4";
 
 var SHELL = [
   "/",
   "/static/style.css",
   "/static/app.js",
+  "/static/install-check.js",
   "/static/icon-192.png",
   "/static/icon-512.png"
 ];
