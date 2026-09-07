@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Vérifier la fiche' if r.is_draft else 'Modifier' }}{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <a class="back" href="{{ url_for('index') if r.is_draft else url_for('recipe', rid=r.id) }}">Retour</a>
+  <h1>{{ 'Vérifier la fiche' if r.is_draft else 'Modifier la fiche' }}</h1>
+  {% if r.is_draft %}
+  <p class="tally">Relis vite les quantités et les étapes avant d'enregistrer.</p>
+  {% endif %}
+</header>
+
+<form class="sheet" method="post" action="{{ url_for('save', rid=r.id) }}"
+      enctype="multipart/form-data" id="edit-form">
+  <input type="hidden" name="payload" id="payload">
+
+  <div class="thumb-row">
+    {% if r.has_image %}
+      <img class="thumb" src="{{ url_for('image', rid=r.id) }}" alt="">
+    {% else %}
+      <span class="thumb thumb-none">{{ r.emoji or '🍽️' }}</span>
+    {% endif %}
+    <label class="field field-grow">
+      <span class="field-label">Changer la photo</span>
+      <input type="file" name="photo" accept="image/*">
+    </label>
+  </div>
+
+  <label class="field">
+    <span class="field-label">Nom du plat</span>
+    <input type="text" id="f-title" value="{{ r.title if r.title != 'Nouvelle recette' else '' }}"
+           placeholder="Gâteau au yaourt" required>
+  </label>
+
+  <div class="field-pair">
+    <label class="field">
+      <span class="field-label">Emoji</span>
+      <input type="text" id="f-emoji" value="{{ r.emoji or '' }}" maxlength="4" placeholder="🍰">
+    </label>
+    <label class="field">
+      <span class="field-label">Pour combien</span>
+      <input type="text" id="f-servings" value="{{ r.servings or '' }}" placeholder="4 personnes">
+    </label>
+    <label class="field">
+      <span class="field-label">Durée</span>
+      <input type="text" id="f-time" value="{{ r.total_time or '' }}" placeholder="45 min">
+    </label>
+  </div>
+
+  <h2 class="sheet-h">Ingrédients</h2>
+  <div id="ing-rows" class="rows"></div>
+  <button class="btn btn-ghost btn-sm" type="button" id="ing-add">Ajouter un ingrédient</button>
+
+  <h2 class="sheet-h">Étapes</h2>
+  <div id="step-rows" class="rows"></div>
+  <button class="btn btn-ghost btn-sm" type="button" id="step-add">Ajouter une étape</button>
+
+  <label class="field">
+    <span class="field-label">À savoir</span>
+    <textarea id="f-notes" rows="3" placeholder="Une astuce, une variante…">{{ r.notes or '' }}</textarea>
+  </label>
+
+  <button class="btn btn-go" type="submit">Enregistrer la recette</button>
+</form>
+
+<script type="application/json" id="seed">{{ {'ingredients': r.ingredients, 'steps': r.steps}|tojson }}</script>
+{% endblock %}

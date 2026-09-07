@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ r.title }}{% endblock %}
+{% block bodyclass %}has-hero{% endblock %}
+
+{% block content %}
+<article class="card" data-recipe-id="{{ r.id }}">
+
+  <div class="hero">
+    {% if r.has_image %}
+      <img src="{{ url_for('image', rid=r.id) }}" alt="{{ r.title }}">
+    {% else %}
+      <span class="hero-nophoto">{{ r.emoji or '🍽️' }}</span>
+    {% endif %}
+    <a class="hero-back" href="{{ url_for('index') }}" aria-label="Retour à l'étagère">‹</a>
+    <button class="hero-fav {% if r.is_favorite %}on{% endif %}" id="fav"
+            aria-label="Mettre dans les préférées" aria-pressed="{{ 'true' if r.is_favorite else 'false' }}">★</button>
+  </div>
+
+  <div class="band">
+    <h1>{% if r.emoji %}<span class="band-emoji" aria-hidden="true">{{ r.emoji }}</span>{% endif %}{{ r.title }}</h1>
+    <p class="facts">
+      {% if r.servings %}<span>{{ r.servings }}</span>{% endif %}
+      {% if r.total_time %}<span>{{ r.total_time }}</span>{% endif %}
+      {% if r.times_cooked %}<span>déjà faite {{ r.times_cooked }} fois</span>{% endif %}
+    </p>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab on" role="tab" aria-selected="true" data-panel="p-ing">
+      Ce qu'il faut <b>{{ r.ingredients|length }}</b>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" data-panel="p-step">
+      On cuisine <b>{{ r.steps|length }}</b>
+    </button>
+  </div>
+
+  <section class="panel" id="p-ing" role="tabpanel">
+    {% if r.ingredients %}
+    <ul class="ing-list">
+      {% for ing in r.ingredients %}
+      <li>
+        <label>
+          <input type="checkbox" class="ing-check" data-key="{{ r.id }}-{{ loop.index }}">
+          <span class="box" aria-hidden="true"></span>
+          <span class="ing-text">
+            {% if ing.qty %}<b>{{ ing.qty }}</b> {% endif %}{{ ing.item }}
+          </span>
+        </label>
+      </li>
+      {% endfor %}
+    </ul>
+    <button class="btn btn-ghost" id="uncheck-all">Tout décocher</button>
+    {% else %}
+    <p class="empty-note">Pas d'ingrédients enregistrés. Touche « Modifier » pour les ajouter.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel" id="p-step" role="tabpanel" hidden>
+    {% if r.steps %}
+    <ol class="step-list">
+      {% for s in r.steps %}
+      <li><span class="step-no">{{ loop.index }}</span><p>{{ s }}</p></li>
+      {% endfor %}
+    </ol>
+    <button class="btn btn-go" id="cook-go">Mode cuisine</button>
+    {% else %}
+    <p class="empty-note">Pas d'étapes enregistrées. Touche « Modifier » pour les ajouter.</p>
+    {% endif %}
+  </section>
+
+  {% if r.notes %}
+  <aside class="note">
+    <h2>À savoir</h2>
+    <p>{{ r.notes }}</p>
+  </aside>
+  {% endif %}
+
+  <footer class="card-foot">
+    <a class="btn btn-ghost" href="{{ url_for('edit', rid=r.id) }}">Modifier</a>
+    {% if r.source_url %}
+      <a class="btn btn-ghost" href="{{ r.source_url }}" target="_blank" rel="noopener">Voir la publication</a>
+    {% endif %}
+    <form method="post" action="{{ url_for('delete', rid=r.id) }}"
+          id="delete-form" data-title="{{ r.title }}">
+      <button class="btn btn-danger" type="submit">Supprimer</button>
+    </form>
+  </footer>
+</article>
+
+{% if r.steps %}
+<div class="cook" id="cook" hidden>
+  <div class="cook-bar">
+    <button id="cook-close" aria-label="Quitter le mode cuisine">Fermer</button>
+    <span id="cook-count"></span>
+  </div>
+  <div class="cook-body">
+    <span class="cook-no" id="cook-no">1</span>
+    <p class="cook-text" id="cook-text"></p>
+  </div>
+  <div class="cook-nav">
+    <button id="cook-prev" aria-label="Étape précédente">‹</button>
+    <button id="cook-next" class="primary">Suivant</button>
+  </div>
+  <script type="application/json" id="cook-data">{{ r.steps|tojson }}</script>
+</div>
+{% endif %}
+{% endblock %}

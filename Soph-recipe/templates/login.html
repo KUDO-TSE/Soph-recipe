@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Code d'accès{% endblock %}
+
+{% block content %}
+<div class="gate">
+  <div class="gate-icon" aria-hidden="true">🍲</div>
+  <h1>Les recettes de Soph</h1>
+  <form method="post" class="sheet">
+    <label class="field">
+      <span class="field-label">Code d'accès</span>
+      <input type="password" name="pin" inputmode="numeric" autocomplete="current-password"
+             autofocus required>
+    </label>
+    {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+    <button class="btn btn-go" type="submit">Entrer</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Ajouter une recette{% endblock %}
+
+{% block content %}
+<header class="page-head">
+  <a class="back" href="{{ url_for('index') }}">Retour</a>
+  <h1>Ajouter une recette</h1>
+</header>
+
+<form class="sheet" id="import-form" enctype="multipart/form-data">
+  <label class="field">
+    <span class="field-label">Le lien de la publication</span>
+    <input type="url" name="url" id="url" inputmode="url" autocomplete="off"
+           placeholder="https://www.instagram.com/p/...">
+  </label>
+
+  <p class="hint">Instagram et Facebook cachent parfois leur contenu. Si la lecture échoue,
+    ouvre la publication, copie la légende et colle-la ci-dessous.</p>
+
+  <details class="fold" id="manual-fold">
+    <summary>Coller le texte de la recette</summary>
+    <label class="field">
+      <textarea name="text" id="text" rows="8"
+                placeholder="Colle ici la légende du post, ou la recette telle qu'elle est écrite."></textarea>
+    </label>
+    <label class="field">
+      <span class="field-label">Une photo du plat (optionnel)</span>
+      <input type="file" name="photo" id="photo" accept="image/*">
+    </label>
+  </details>
+
+  <p class="form-error" id="import-error" hidden></p>
+
+  <button class="btn btn-go" type="submit" id="import-go">Créer la fiche</button>
+  <button class="btn btn-ghost" type="button" id="blank-go">Écrire la recette à la main</button>
+</form>
+
+<div class="working" id="working" hidden>
+  <div class="pot" aria-hidden="true">🍲</div>
+  <p>On lit la recette…</p>
+  <small>Ça prend quelques secondes.</small>
+</div>
+{% endblock %}
